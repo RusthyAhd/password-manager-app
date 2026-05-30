@@ -16,11 +16,22 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscure = true;
   bool _isFirstTime = false;
   String? _errorText;
+  bool _canUseBiometrics = false;
+  bool _isBiometricAuthenticating = false;
 
   @override
   void initState() {
     super.initState();
     _isFirstTime = !_controller.hasMasterPassword;
+    _checkBiometricAvailability();
+  }
+
+  Future<void> _checkBiometricAvailability() async {
+    if (_isFirstTime) return;
+    final canUse = await _controller.canUseBiometrics();
+    if (mounted) {
+      setState(() => _canUseBiometrics = canUse);
+    }
   }
 
   @override
@@ -53,8 +64,8 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 8),
               Text(
                 _isFirstTime
-                    ? 'Create a master password to secure your vault'
-                    : 'Enter your master password to unlock',
+                    ? 'Create a password to secure your vault'
+                    : 'Enter your password to unlock',
                 style: const TextStyle(color: AppColors.muted),
               ),
               const SizedBox(height: 32),
@@ -63,8 +74,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 title: 'Vault Access',
                 description:
                     _isFirstTime
-                        ? 'Create a master password to secure your vault'
-                        : 'Enter your master password to unlock',
+                        ? 'Create a password to secure your vault'
+                        : 'Enter your password to unlock',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -74,8 +85,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       decoration: InputDecoration(
                         labelText:
                             _isFirstTime
-                                ? 'Create Master Password'
-                                : 'Master Password',
+                                ? 'Create Password'
+                                : 'Password',
                         filled: true,
                         labelStyle: const TextStyle(color: AppColors.dark),
                         fillColor: AppColors.card,
@@ -94,14 +105,37 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 16),
                     PrimaryButton(
                       label:
-                          _isFirstTime ? 'Set Master Password' : 'Unlock Vault',
+                          _isFirstTime ? 'Set Password' : 'Unlock Vault',
                       onPressed: _handleLogin,
                     ),
-                    const SizedBox(height: 10),
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text('Use biometrics instead'),
-                    ),
+                    if (!_isFirstTime && _canUseBiometrics) ...[
+                      const SizedBox(height: 10),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed:
+                              _isBiometricAuthenticating
+                                  ? null
+                                  : _handleBiometricLogin,
+                          icon: _isBiometricAuthenticating
+                              ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.primary.withValues(alpha: 0.7),
+                                  ),
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : const Icon(Icons.fingerprint, color: AppColors.dark),
+                          label: Text(
+                            _isBiometricAuthenticating
+                                ? 'Authenticating...'
+                                : 'Use Biometrics',
+                          style: TextStyle(color: AppColors.dark),),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 iconGradient: const LinearGradient(
@@ -143,11 +177,63 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final isValid = _controller.verifyPassword(password);
     if (!isValid) {
-      setState(() => _errorText = 'Invalid master password');
+      setState(() => _errorText = 'Invalid password');
       return;
     }
 
     if (!mounted) return;
     Navigator.of(context).pushReplacementNamed('/dashboard');
+  }
+
+  Future<void> _handleBiometricLogin() async {
+    setState(() {
+      _isBiometricAuthenticating = true;
+      _errorText = null;
+    });
+
+    try {
+      final isAuthenticated =
+          await _controller.authenticateWithBiometrics();
+      if (!mounted) return;
+
+      if (isAuthenticated) {
+        Navigator.of(context).pushReplacementNamed('/dashboard');
+      } else {
+        _showBiometricFailedDialog();
+      }
+    } catch (e) {
+      if (mounted) {
+        _showBiometricFailedDialog();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isBiometricAuthenticating = false);
+      }
+    }
+  }
+
+  void _showBiometricFailedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Biometric Authentication'),
+        content: const Text(
+          'Biometric authentication is not available or was cancelled. Please use your password instead.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Use Password'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _handleBiometricLogin();
+            },
+            child: const Text('Try Again'),
+          ),
+        ],
+      ),
+    );
   }
 }

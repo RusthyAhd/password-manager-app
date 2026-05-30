@@ -5,6 +5,7 @@ import 'package:secure_vault/controller/password_list_controller.dart';
 import 'package:secure_vault/model/password_item.dart';
 import 'package:secure_vault/view/theme/app_colors.dart';
 import 'package:secure_vault/view/widgets/custom_bottom_nav_bar.dart';
+import 'package:secure_vault/view/widgets/glassmorphism_card.dart';
 
 class PasswordListScreen extends StatelessWidget {
   PasswordListScreen({super.key});
@@ -46,76 +47,34 @@ class PasswordListScreen extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final item = items[index];
-              return InkWell(
+              return GlassmorphismCard(
+                icon: Icons.lock_outline,
+                title: item.appName,
+                description: item.username,
                 onTap:
                     () => Navigator.of(
                       context,
                     ).pushNamed('/add-password', arguments: item),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.card,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: AppColors.primary.withValues(
-                          alpha: 0.12,
-                        ),
-                        child: Text(
-                          item.appName.isNotEmpty
-                              ? item.appName[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(color: AppColors.primary),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.appName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item.username,
-                              style: const TextStyle(color: AppColors.muted),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () async {
-                          await Clipboard.setData(
-                            ClipboardData(text: item.password),
-                          );
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Password copied')),
-                          );
-                        },
-                        icon: const Icon(Icons.copy, color: AppColors.primary),
-                      ),
-                      IconButton(
-                        onPressed:
-                            () => Navigator.of(
-                              context,
-                            ).pushNamed('/add-password', arguments: item),
-                        icon: const Icon(Icons.edit, color: AppColors.dark),
-                      ),
-                      IconButton(
-                        onPressed: () async {
-                          await controller.deletePassword(item.id);
-                        },
-                        icon: const Icon(Icons.delete, color: AppColors.danger),
-                      ),
-                    ],
-                  ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      onPressed: () async {
+                        await Clipboard.setData(
+                          ClipboardData(text: item.password),
+                        );
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Password copied')),
+                        );
+                      },
+                      icon: const Icon(Icons.content_copy, color: Colors.white),
+                    ),
+                    const Icon(Icons.chevron_right, color: Colors.white70),
+                  ],
+                ),
+                iconGradient: const LinearGradient(
+                  colors: [Color(0xFF0088FF), Color(0xFF4DB8FF)],
                 ),
               );
             },

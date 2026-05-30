@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 import 'package:secure_vault/controller/search_filter_controller.dart';
 import 'package:secure_vault/data/vault_repository.dart';
 import 'package:secure_vault/model/password_item.dart';
 import 'package:secure_vault/view/theme/app_colors.dart';
 import 'package:secure_vault/view/widgets/custom_bottom_nav_bar.dart';
+import 'package:secure_vault/view/widgets/glassmorphism_card.dart';
 import 'package:secure_vault/view/widgets/section_header.dart';
 
 class SearchFilterScreen extends StatefulWidget {
@@ -48,11 +50,27 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
               hintText: 'Search by website, username, or category',
-              prefixIcon: const Icon(Icons.search),
+              prefixIcon: const Icon(Icons.search, color: AppColors.muted),
               filled: true,
               fillColor: AppColors.card,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.3),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.3),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
             ),
           ),
@@ -84,27 +102,54 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
           const SizedBox(height: 20),
           const SectionHeader(title: 'Category'),
           const SizedBox(height: 10),
-          DropdownButtonFormField<String>(
-            value: _category,
-            items:
-                _controller.categories
+          ValueListenableBuilder<Box<PasswordItem>>(
+            valueListenable: _repository.listenable(),
+            builder: (context, box, _) {
+              final items = box.values.toList();
+              final set = <String>{};
+              for (final it in items) {
+                set.add((it.category ?? 'Uncategorized').trim());
+              }
+              final categories = ['All', ...set.toList()..sort()];
+
+              return DropdownButtonFormField<String>(
+                value: categories.contains(_category) ? _category : 'All',
+                items: categories
                     .map(
                       (item) =>
                           DropdownMenuItem(value: item, child: Text(item)),
                     )
                     .toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() => _category = value);
-              }
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _category = value);
+                  }
+                },
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: AppColors.card,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.border.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.border.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: AppColors.primary,
+                      width: 2,
+                    ),
+                  ),
+                ),
+              );
             },
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: AppColors.card,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
           ),
           const SizedBox(height: 20),
           const SectionHeader(title: 'Results'),
@@ -164,24 +209,41 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   }
 
   Widget _buildResultTile(PasswordItem item) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-        child: Text(
-          item.appName.isNotEmpty ? item.appName[0].toUpperCase() : '?',
-          style: const TextStyle(color: AppColors.primary),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GlassmorphismCard(
+        icon: Icons.key,
+        title: item.appName,
+        description: item.username,
+        onTap: () =>
+            Navigator.of(context).pushNamed('/add-password', arguments: item),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              onPressed: () async {
+                await Clipboard.setData(
+                  ClipboardData(text: item.password),
+                );
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Password copied')),
+                );
+              },
+              icon: const Icon(Icons.content_copy, color: Colors.white),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white70),
+          ],
+        ),
+        padding: const EdgeInsets.all(14),
+        borderRadius: 14,
+        iconGradient: const LinearGradient(
+          colors: [
+            Color(0xFF0088FF),
+            Color(0xFF4DB8FF),
+          ],
         ),
       ),
-      title: Text(item.appName),
-      subtitle: Text(
-        item.username,
-        style: const TextStyle(color: AppColors.muted),
-      ),
-      trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
-      onTap:
-          () =>
-              Navigator.of(context).pushNamed('/add-password', arguments: item),
     );
   }
 }

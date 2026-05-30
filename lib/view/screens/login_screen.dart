@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:secure_vault/controller/login_controller.dart';
 import 'package:secure_vault/view/theme/app_colors.dart';
+import 'package:secure_vault/view/widgets/glassmorphism_card.dart';
 import 'package:secure_vault/view/widgets/primary_button.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -57,33 +58,58 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: const TextStyle(color: AppColors.muted),
               ),
               const SizedBox(height: 32),
-              TextField(
-                controller: _controller.passwordController,
-                obscureText: _obscure,
-                decoration: InputDecoration(
-                  labelText:
-                      _isFirstTime ? 'Create Master Password' : 'Master Password',
-                  filled: true,
-                  fillColor: AppColors.card,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  errorText: _errorText,
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () => setState(() => _obscure = !_obscure),
-                  ),
+              GlassmorphismCard(
+                icon: Icons.lock_outline,
+                title: 'Vault Access',
+                description:
+                    _isFirstTime
+                        ? 'Create a master password to secure your vault'
+                        : 'Enter your master password to unlock',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _controller.passwordController,
+                      obscureText: _obscure,
+                      decoration: InputDecoration(
+                        labelText:
+                            _isFirstTime
+                                ? 'Create Master Password'
+                                : 'Master Password',
+                        filled: true,
+                        labelStyle: const TextStyle(color: AppColors.dark),
+                        fillColor: AppColors.card,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        errorText: _errorText,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscure ? Icons.visibility_off : Icons.visibility,
+                          ),
+                          onPressed: () => setState(() => _obscure = !_obscure),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    PrimaryButton(
+                      label:
+                          _isFirstTime ? 'Set Master Password' : 'Unlock Vault',
+                      onPressed: _handleLogin,
+                    ),
+                    const SizedBox(height: 10),
+                    TextButton(
+                      onPressed: () {},
+                      child: const Text('Use biometrics instead'),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 20),
-              PrimaryButton(
-                label: _isFirstTime ? 'Set Master Password' : 'Unlock Vault',
-                onPressed: _handleLogin,
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () {},
-                child: const Text('Use biometrics instead'),
+                iconGradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF0088FF),
+                    Color(0xFF4DB8FF),
+                  ],
+                ),
               ),
             ],
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:secure_vault/view/widgets/glassmorphism_card.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key, this.autoNavigate = true});
@@ -31,7 +32,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const backgroundColor = Color(0xFF7A8794);
+    const backgroundColor = Color(0xFF595959);
     const accentBlue = Color(0xFF0088FF);
 
     return Scaffold(
@@ -90,15 +91,18 @@ class _SplashScreenState extends State<SplashScreen> {
               bottom: 36,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Text(
-                    'FOR BETTER MANAGE',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 2.0,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: GlassmorphismCard(
+                      icon: Icons.verified_user,
+                      title: 'Premium Security',
+                      description: 'FOR BETTER MANAGE',
+                      borderRadius: 16,
+                      padding: const EdgeInsets.all(14),
+                      iconGradient: const LinearGradient(
+                        colors: [Color(0xFF0088FF), Color(0xFF4DB8FF)],
+                      ),
                     ),
                   ),
                 ],

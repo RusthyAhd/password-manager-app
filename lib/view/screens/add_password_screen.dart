@@ -3,6 +3,7 @@ import 'package:secure_vault/controller/password_form_controller.dart';
 import 'package:secure_vault/data/vault_repository.dart';
 import 'package:secure_vault/model/password_item.dart';
 import 'package:secure_vault/view/theme/app_colors.dart';
+import 'package:secure_vault/view/widgets/glassmorphism_card.dart';
 import 'package:secure_vault/view/widgets/primary_button.dart';
 
 class AddPasswordScreen extends StatefulWidget {
@@ -16,12 +17,18 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
   final PasswordFormController _controller = PasswordFormController();
   final VaultRepository _repository = VaultRepository.instance;
   bool _obscure = true;
-  final double _strength = 0.7;
+  double _strength = 0.0;
+  String _strengthLabel = 'Very Weak';
   bool _initialized = false;
   PasswordItem? _editingItem;
 
+  void _onPasswordChanged() {
+    _updateStrength(_controller.passwordController.text);
+  }
+
   @override
   void dispose() {
+    _controller.passwordController.removeListener(_onPasswordChanged);
     _controller.dispose();
     super.dispose();
   }
@@ -40,7 +47,15 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
       _controller.notesController.text = args.notes;
       _controller.selectedCategory = args.category;
     }
+    // compute initial strength for prefilled password
+    _updateStrength(_controller.passwordController.text);
     _initialized = true;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.passwordController.addListener(_onPasswordChanged);
   }
 
   @override
@@ -87,16 +102,27 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      final result = await Navigator.of(context).pushNamed('/password-generator');
+                      final result = await Navigator.of(
+                        context,
+                      ).pushNamed('/password-generator');
                       if (result is String && result.isNotEmpty) {
-                        setState(() => _controller.passwordController.text = result);
+                        setState(
+                          () => _controller.passwordController.text = result,
+                        );
                       }
                     },
                     icon: const Icon(Icons.auto_awesome),
                     label: const Text('Generate Password'),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 52),
-                      side: const BorderSide(color: AppColors.primary),
+                      side: const BorderSide(
+                        color: AppColors.primary,
+                        width: 2,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      foregroundColor: AppColors.dark,
                     ),
                   ),
                 ),
@@ -120,7 +146,21 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
         labelText: label,
         filled: true,
         fillColor: AppColors.card,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: AppColors.border.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
       ),
     );
   }
@@ -133,7 +173,21 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
         labelText: 'Password',
         filled: true,
         fillColor: AppColors.card,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: AppColors.border.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
         suffixIcon: IconButton(
           icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
           onPressed: () => setState(() => _obscure = !_obscure),
@@ -143,29 +197,84 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
   }
 
   Widget _buildStrengthMeter() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
+    return GlassmorphismCard(
+      icon: Icons.security,
+      title: 'Password Strength',
+      description: _strengthLabel,
+      child: LinearProgressIndicator(
+        value: _strength.clamp(0.0, 1.0),
+        color:
+            _strength >= 0.8
+                ? Colors.green
+                : _strength >= 0.6
+                ? Colors.lightGreen
+                : _strength >= 0.4
+                ? Colors.orange
+                : Colors.red,
+        backgroundColor: AppColors.border,
+        minHeight: 8,
       ),
-      child: Row(
-        children: [
-          const Text('Strength', style: TextStyle(color: AppColors.muted)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: LinearProgressIndicator(
-              value: _strength,
-              color: AppColors.primary,
-              backgroundColor: AppColors.border,
-              minHeight: 8,
-            ),
-          ),
-          const SizedBox(width: 8),
-          const Text('Strong', style: TextStyle(fontWeight: FontWeight.w600)),
+      padding: const EdgeInsets.all(14),
+      borderRadius: 14,
+      iconGradient: const LinearGradient(
+        colors: [
+          Color(0xFF0088FF),
+          Color(0xFF4DB8FF),
         ],
       ),
     );
+  }
+
+  void _updateStrength(String password) {
+    final pwd = password;
+    if (pwd.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _strength = 0.0;
+        _strengthLabel = 'Very Weak';
+      });
+      return;
+    }
+
+    double score = 0;
+    final lengthScore = (pwd.length / 20).clamp(0.0, 1.0) * 0.4;
+    score += lengthScore;
+
+    final hasLower = pwd.contains(RegExp(r'[a-z]'));
+    final hasUpper = pwd.contains(RegExp(r'[A-Z]'));
+    final hasDigit = pwd.contains(RegExp(r'\d'));
+    final hasSpecial = pwd.contains(RegExp(r'[^A-Za-z0-9]'));
+    final varietyCount =
+        [hasLower, hasUpper, hasDigit, hasSpecial].where((e) => e).length;
+    score += (varietyCount / 4) * 0.5;
+
+    final lowers = pwd.toLowerCase();
+    if (lowers.contains('1234') ||
+        lowers.contains('password') ||
+        lowers.contains('qwerty')) {
+      score -= 0.2;
+    }
+
+    score = score.clamp(0.0, 1.0);
+
+    String label;
+    if (score >= 0.8) {
+      label = 'Strong';
+    } else if (score >= 0.6) {
+      label = 'Good';
+    } else if (score >= 0.4) {
+      label = 'Fair';
+    } else if (score >= 0.2) {
+      label = 'Weak';
+    } else {
+      label = 'Very Weak';
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _strength = score;
+      _strengthLabel = label;
+    });
   }
 
   Widget _buildNotesField() {
@@ -176,7 +285,21 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
         labelText: 'Notes',
         filled: true,
         fillColor: AppColors.card,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: AppColors.border.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
       ),
     );
   }
@@ -199,7 +322,21 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
         labelText: 'Category',
         filled: true,
         fillColor: AppColors.card,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: AppColors.border.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
       ),
     );
   }
@@ -220,27 +357,28 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
     }
 
     final now = DateTime.now();
-    final item = _editingItem == null
-        ? PasswordItem(
-            id: now.microsecondsSinceEpoch.toString(),
-            appName: appName,
-            username: username,
-            password: password,
-            category: category,
-            url: url,
-            notes: notes,
-            createdAt: now,
-            updatedAt: now,
-          )
-        : _editingItem!.copyWith(
-            appName: appName,
-            username: username,
-            password: password,
-            category: category,
-            url: url,
-            notes: notes,
-            updatedAt: now,
-          );
+    final item =
+        _editingItem == null
+            ? PasswordItem(
+              id: now.microsecondsSinceEpoch.toString(),
+              appName: appName,
+              username: username,
+              password: password,
+              category: category,
+              url: url,
+              notes: notes,
+              createdAt: now,
+              updatedAt: now,
+            )
+            : _editingItem!.copyWith(
+              appName: appName,
+              username: username,
+              password: password,
+              category: category,
+              url: url,
+              notes: notes,
+              updatedAt: now,
+            );
 
     await _repository.savePassword(item);
     if (!mounted) return;

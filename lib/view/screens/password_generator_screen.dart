@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:secure_vault/controller/password_generator_controller.dart';
 import 'package:flutter/services.dart';
 import 'package:secure_vault/view/theme/app_colors.dart';
+import 'package:secure_vault/view/widgets/glassmorphism_card.dart';
 import 'package:secure_vault/view/widgets/primary_button.dart';
 
 class PasswordGeneratorScreen extends StatefulWidget {
@@ -33,35 +34,24 @@ class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen> {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _controller.samplePassword,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () async {
-                    await Clipboard.setData(
-                      ClipboardData(text: _controller.samplePassword),
-                    );
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Copied to clipboard')),
-                    );
-                  },
-                  icon: const Icon(Icons.copy, color: AppColors.primary),
-                ),
+          GlassmorphismCard(
+            icon: Icons.auto_awesome,
+            title: 'Generated Password',
+            description: _controller.samplePassword,
+            buttonLabel: 'Copy',
+            onButtonPressed: () async {
+              await Clipboard.setData(
+                ClipboardData(text: _controller.samplePassword),
+              );
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Copied to clipboard')),
+              );
+            },
+            iconGradient: const LinearGradient(
+              colors: [
+                Color(0xFF0088FF),
+                Color(0xFF4DB8FF),
               ],
             ),
           ),

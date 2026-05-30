@@ -66,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 _isFirstTime
                     ? 'Create a password to secure your vault'
                     : 'Enter your password to unlock',
-                style: const TextStyle(color: AppColors.muted),
+                style: const TextStyle(color: AppColors.dark),
               ),
               const SizedBox(height: 32),
               GlassmorphismCard(

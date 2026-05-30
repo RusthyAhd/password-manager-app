@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:secure_vault/data/vault_repository.dart';
 import 'package:secure_vault/model/password_item.dart';
@@ -28,6 +29,7 @@ class MyApp extends StatelessWidget {
       title: 'Secure Vault',
       theme: ThemeData(
         useMaterial3: true,
+        textTheme: GoogleFonts.robotoSlabTextTheme(),
       ),
       debugShowCheckedModeBanner: false,
       home: const SplashScreen(),
